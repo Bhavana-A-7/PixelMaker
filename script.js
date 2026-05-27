@@ -2,47 +2,41 @@ $(document).ready(function () {
 
     let currentColor = $("#colorPicker").val();
 
-    let mouseDown = false;
-
-    let eyedropperMode = false;
-
     let undoStack = [];
 
     let redoStack = [];
 
-    // =========================
+    let isDrawing = false;
+
+    // ======================
     // CREATE GRID
-    // =========================
+    // ======================
     function createGrid(rows, cols) {
 
         $("#grid").empty();
 
         $("#grid").css({
-            "grid-template-columns": `repeat(${cols}, 20px)`
+            "grid-template-columns": `repeat(${cols}, 25px)`
         });
 
         for (let i = 0; i < rows * cols; i++) {
 
-            let cell = $("<div></div>");
-
-            cell.addClass("cell");
-
-            $("#grid").append(cell);
+            $("#grid").append('<div class="cell"></div>');
         }
 
-        // Reset history
         undoStack = [];
+
         redoStack = [];
 
         saveState();
     }
 
     // Default Grid
-    createGrid(32, 32);
+    createGrid(16, 16);
 
-    // =========================
+    // ======================
     // SAVE STATE
-    // =========================
+    // ======================
     function saveState() {
 
         let state = [];
@@ -54,19 +48,15 @@ $(document).ready(function () {
 
         undoStack.push([...state]);
 
-        // Limit history
-        if (undoStack.length > 50) {
+        if (undoStack.length > 30) {
 
             undoStack.shift();
         }
-
-        // Clear redo after new action
-        redoStack = [];
     }
 
-    // =========================
+    // ======================
     // RESTORE STATE
-    // =========================
+    // ======================
     function restoreState(state) {
 
         $(".cell").each(function (index) {
@@ -75,78 +65,50 @@ $(document).ready(function () {
         });
     }
 
-    // =========================
-    // MOUSE EVENTS
-    // =========================
-    $(document).mousedown(function () {
+    // ======================
+    // DRAW START
+    // ======================
+    $("#grid").on("mousedown", ".cell", function () {
 
-        mouseDown = true;
+        isDrawing = true;
+
+        saveState();
+
+        $(this).css("background-color", currentColor);
+
+        redoStack = [];
     });
 
-    $(document).mouseup(function () {
+    // ======================
+    // DRAW WHILE DRAGGING
+    // ======================
+    $("#grid").on("mouseenter", ".cell", function () {
 
-        mouseDown = false;
+        if (isDrawing) {
 
-        $(".cell").data("saved", false);
-    });
-
-    // =========================
-    // DRAWING
-    // =========================
-    $("#grid").on("mousedown mouseenter", ".cell", function (e) {
-
-        if (e.type === "mousedown" || mouseDown) {
-
-            // Save state BEFORE drawing
-            if (!$(".cell").data("drawing")) {
-
-                saveState();
-
-                $(".cell").data("drawing", true);
-            }
-
-            // Eyedropper Mode
-            if (eyedropperMode) {
-
-                let picked = rgbToHex($(this).css("background-color"));
-
-                $("#colorPicker").val(picked);
-
-                currentColor = picked;
-
-                eyedropperMode = false;
-
-            } else {
-
-                $(this).css("background-color", currentColor);
-            }
+            $(this).css("background-color", currentColor);
         }
     });
 
+    // ======================
+    // STOP DRAWING
+    // ======================
     $(document).mouseup(function () {
 
-        $(".cell").data("drawing", false);
+        isDrawing = false;
     });
 
-    // =========================
+    // ======================
     // COLOR PICKER
-    // =========================
+    // ======================
     $("#colorPicker").change(function () {
 
         currentColor = $(this).val();
     });
 
-    // =========================
-    // EYEDROPPER
-    // =========================
-    $("#eyedropper").click(function () {
-
-        eyedropperMode = true;
-    });
-
-    // =========================
+    // ======================
     // CREATE GRID BUTTON
-    // =========================
+    // ======================
     $("#createGrid").click(function () {
 
         let rows = parseInt($("#rows").val());
@@ -156,9 +118,21 @@ $(document).ready(function () {
         createGrid(rows, cols);
     });
 
-    // =========================
+    // ======================
+    // CLEAR GRID
+    // ======================
+    $("#clearGrid").click(function () {
+
+        saveState();
+
+        $(".cell").css("background-color", "white");
+
+        redoStack = [];
+    });
+
+    // ======================
     // UNDO
-    // =========================
+    // ======================
     $("#undo").click(function () {
 
         if (undoStack.length > 1) {
@@ -173,9 +147,9 @@ $(document).ready(function () {
         }
     });
 
-    // =========================
+    // ======================
     // REDO
-    // =========================
+    // ======================
     $("#redo").click(function () {
 
         if (redoStack.length > 0) {
@@ -188,63 +162,21 @@ $(document).ready(function () {
         }
     });
 
-    // =========================
-    // CLEAR GRID
-    // =========================
-    $("#clearGrid").click(function () {
-
-        saveState();
-
-        $(".cell").css("background-color", "white");
-    });
-
-    // =========================
-    // EXPORT DATA
-    // =========================
+    // ======================
+    // EXPORT PNG
+    // ======================
     $("#exportData").click(function () {
 
-        let data = [];
+        html2canvas(document.querySelector("#grid")).then(canvas => {
 
-        $(".cell").each(function () {
+            let link = document.createElement("a");
 
-            data.push($(this).css("background-color"));
+            link.download = "pixel-art.png";
+
+            link.href = canvas.toDataURL();
+
+            link.click();
         });
-
-        let jsonData = JSON.stringify(data);
-
-        // Show in textarea
-        $("#output").val(jsonData);
-
-        // Download JSON file
-        let blob = new Blob([jsonData], {
-            type: "application/json"
-        });
-
-        let link = document.createElement("a");
-
-        link.href = URL.createObjectURL(blob);
-
-        link.download = "pixel-art.json";
-
-        link.click();
     });
-
-    // =========================
-    // RGB TO HEX
-    // =========================
-    function rgbToHex(rgb) {
-
-        let values = rgb.match(/\d+/g);
-
-        if (!values) return "#ffffff";
-
-        return "#" + values.slice(0, 3).map(x => {
-
-            let hex = parseInt(x).toString(16);
-
-            return hex.length === 1 ? "0" + hex : hex;
-
-        }).join('');
-    }
 
 });
