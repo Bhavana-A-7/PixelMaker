@@ -1,0 +1,25 @@
+body {
+    font-family: Arial;
+    text-align: center;
+    background: #f4f4f4;
+}
+
+.controls {
+    margin: 20px;
+}
+
+#grid {
+    display: inline-grid;
+    border: 2px solid black;
+}
+
+.cell {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #ddd;
+    background: white;
+}
+
+textarea {
+    margin-top: 20px;
+}
