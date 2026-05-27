@@ -10,7 +10,9 @@ $(document).ready(function () {
 
     let redoStack = [];
 
-    // Create Grid
+    // =========================
+    // CREATE GRID
+    // =========================
     function createGrid(rows, cols) {
 
         $("#grid").empty();
@@ -28,12 +30,19 @@ $(document).ready(function () {
             $("#grid").append(cell);
         }
 
+        // Reset history
+        undoStack = [];
+        redoStack = [];
+
         saveState();
     }
 
+    // Default Grid
     createGrid(32, 32);
 
-    // Save State
+    // =========================
+    // SAVE STATE
+    // =========================
     function saveState() {
 
         let state = [];
@@ -45,15 +54,19 @@ $(document).ready(function () {
 
         undoStack.push([...state]);
 
+        // Limit history
         if (undoStack.length > 50) {
 
             undoStack.shift();
         }
 
+        // Clear redo after new action
         redoStack = [];
     }
 
-    // Restore State
+    // =========================
+    // RESTORE STATE
+    // =========================
     function restoreState(state) {
 
         $(".cell").each(function (index) {
@@ -62,13 +75,14 @@ $(document).ready(function () {
         });
     }
 
-    // Mouse Down
+    // =========================
+    // MOUSE EVENTS
+    // =========================
     $(document).mousedown(function () {
 
         mouseDown = true;
     });
 
-    // Mouse Up
     $(document).mouseup(function () {
 
         mouseDown = false;
@@ -76,22 +90,22 @@ $(document).ready(function () {
         $(".cell").data("saved", false);
     });
 
-    // Drawing
+    // =========================
+    // DRAWING
+    // =========================
     $("#grid").on("mousedown mouseenter", ".cell", function (e) {
 
         if (e.type === "mousedown" || mouseDown) {
 
             // Save state BEFORE drawing
-            if (!$(this).data("saved")) {
+            if (!$(".cell").data("drawing")) {
 
                 saveState();
 
-                $(".cell").data("saved", false);
-
-                $(this).data("saved", true);
+                $(".cell").data("drawing", true);
             }
 
-            // Eyedropper
+            // Eyedropper Mode
             if (eyedropperMode) {
 
                 let picked = rgbToHex($(this).css("background-color"));
@@ -109,29 +123,42 @@ $(document).ready(function () {
         }
     });
 
-    // Color Picker
+    $(document).mouseup(function () {
+
+        $(".cell").data("drawing", false);
+    });
+
+    // =========================
+    // COLOR PICKER
+    // =========================
     $("#colorPicker").change(function () {
 
         currentColor = $(this).val();
     });
 
-    // Eyedropper
+    // =========================
+    // EYEDROPPER
+    // =========================
     $("#eyedropper").click(function () {
 
         eyedropperMode = true;
     });
 
-    // Create Grid Button
+    // =========================
+    // CREATE GRID BUTTON
+    // =========================
     $("#createGrid").click(function () {
 
-        let rows = $("#rows").val();
+        let rows = parseInt($("#rows").val());
 
-        let cols = $("#cols").val();
+        let cols = parseInt($("#cols").val());
 
         createGrid(rows, cols);
     });
 
-    // Undo
+    // =========================
+    // UNDO
+    // =========================
     $("#undo").click(function () {
 
         if (undoStack.length > 1) {
@@ -146,7 +173,9 @@ $(document).ready(function () {
         }
     });
 
-    // Redo
+    // =========================
+    // REDO
+    // =========================
     $("#redo").click(function () {
 
         if (redoStack.length > 0) {
@@ -159,7 +188,9 @@ $(document).ready(function () {
         }
     });
 
-    // Clear Grid
+    // =========================
+    // CLEAR GRID
+    // =========================
     $("#clearGrid").click(function () {
 
         saveState();
@@ -167,7 +198,9 @@ $(document).ready(function () {
         $(".cell").css("background-color", "white");
     });
 
-    // Export Data
+    // =========================
+    // EXPORT DATA
+    // =========================
     $("#exportData").click(function () {
 
         let data = [];
@@ -179,6 +212,7 @@ $(document).ready(function () {
 
         let jsonData = JSON.stringify(data);
 
+        // Show in textarea
         $("#output").val(jsonData);
 
         // Download JSON file
@@ -195,7 +229,9 @@ $(document).ready(function () {
         link.click();
     });
 
-    // RGB to HEX
+    // =========================
+    // RGB TO HEX
+    // =========================
     function rgbToHex(rgb) {
 
         let values = rgb.match(/\d+/g);
